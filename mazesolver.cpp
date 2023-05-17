@@ -6,6 +6,7 @@
 // ------------------Header Files--------------------------
 
 #include <iostream>
+#include <queue>
 
 // ------------------Class Definitions---------------------
 
@@ -59,6 +60,7 @@ class Maze
     // ------------------Public Functions---------------------
         Maze()
         {
+            //inititalize all cells
             for(int i = 0; i < 16; i++)
             {
                 for(int j = 0; j < 16; j++)
@@ -78,30 +80,6 @@ class Maze
 
         }
 
-        void printMazeWalls()
-        {
-            for(int i = 0; i < 16; i++)
-            {
-                for(int j = 0; j < 16; j++)
-                {
-                    std::cout << cells[i][j].wallCode << " ";
-                }
-                std::cout << std::endl;
-            }
-        }
-
-        void printMazeDist()
-        {
-            for(int i = 0; i < 16; i++)
-            {
-                for(int j = 0; j < 16; j++)
-                {
-                    std::cout << cells[i][j].dist << " ";
-                }
-                std::cout << std::endl;
-            }
-        }
-
         void updateWall(int x, int y, int wallCode)
         {
             //add new walls to current cell
@@ -109,38 +87,41 @@ class Maze
 
             if((wallCode & 1) == 1)
             {
-                if(x+1 <= 15)
+                if(x-1>=0)
                 {
-                    cells[x+1][y].setWallCode(cells[x+1][y].wallCode | 1);
+                    //add wall to adjacent cell
+                    cells[x-1][y].setWallCode(cells[x-1][y].wallCode | 4);
                 }
             }
 
             if((wallCode & 2) == 2)
             {
-                if(y-1 >= 0)
+                if(y+1<=15)
                 {
-                    cells[x][y-1].setWallCode(cells[x][y-1].wallCode | 2);
+                    //add wall to adjacent cell
+                    cells[x][y+1].setWallCode(cells[x][y+1].wallCode | 8);
                 }
             }
 
             if((wallCode & 4) == 4)
             {
-                if(x-1 >= 0)
+                if(x+1<=15)
                 {
-                    cells[x-1][y].setWallCode(cells[x-1][y].wallCode | 4);
+                    //add wall to adjacent cell
+                    cells[x+1][y].setWallCode(cells[x+1][y].wallCode | 1);
                 }
             }
 
             if((wallCode & 8) == 8)
             {
-                if(y+1 <= 15)
+                if(y-1>=0)
                 {
-                    cells[x][y+1].setWallCode(cells[x][y+1].wallCode | 8);
+                    //add wall to adjacent cell
+                    cells[x][y-1].setWallCode(cells[x][y-1].wallCode | 2);
                 }
             }
         }
 
-        //function to print walls in the form of lines and proper spacing
         void printMaze()
         {
             for(int i = 0; i < 16; i++)
@@ -169,7 +150,12 @@ class Maze
                     {
                         std::cout << " ";
                     }
-                    std::cout << "   ";
+                    std::cout << " ";
+                    std::cout << cells[i][j].dist;
+                    if(cells[i][j].dist < 10)
+                    {
+                        std::cout << " ";
+                    }
                 }
                 std::cout << "|" << std::endl;
             }
@@ -180,8 +166,118 @@ class Maze
             }
             std::cout << std::endl;
         }
+        
+        void floodFill()
+        {
+            bool visited[16][16] = {false};
+            std::queue<Cell> q;
+
+            floodFillHelper(7, 7, visited, q, 0);
+            for(int i = 0; i < 16; i++)
+            {
+                for(int j = 0; j < 16; j++)
+                {
+                    visited[i][j] = false;
+                }
+            }
+            floodFillHelper(7, 8, visited, q, 0);
+            for(int i = 0; i < 16; i++)
+            {
+                for(int j = 0; j < 16; j++)
+                {
+                    visited[i][j] = false;
+                }
+            }
+            floodFillHelper(8, 7, visited, q, 0);
+            for(int i = 0; i < 16; i++)
+            {
+                for(int j = 0; j < 16; j++)
+                {
+                    visited[i][j] = false;
+                }
+            }
+            floodFillHelper(8, 8, visited, q, 0);
+        }
+
+        void floodFillHelper(int x, int y, bool visited[16][16], std::queue<Cell> q, int distance)
+        {
+            visited[x][y] = true;
+            cells[x][y].setDist(distance);
+            q.push(cells[x][y]);
+
+            while(!q.empty())
+            {
+                Cell current = q.front();
+                q.pop();
+
+                if((current.wallCode & 1) == 0)
+                {
+                    if(current.x-1 >= 0)
+                    {
+                        if(!visited[current.x-1][current.y])
+                        {
+                            visited[current.x-1][current.y] = true;
+                            cells[current.x-1][current.y].setDist(std::min(current.dist+1, cells[current.x-1][current.y].dist));
+                            q.push(cells[current.x-1][current.y]);
+                        }
+                    }
+                }
+                
+                if((current.wallCode & 2) == 0)
+                {
+                    if(current.y+1 <= 15)
+                    {
+                        if(!visited[current.x][current.y+1])
+                        {
+                            visited[current.x][current.y+1] = true;
+                            cells[current.x][current.y+1].setDist(std::min(current.dist+1, cells[current.x][current.y+1].dist));
+                            q.push(cells[current.x][current.y+1]);
+                        }
+                    }
+                }
+
+                if((current.wallCode & 4) == 0)
+                {
+                    if(current.x+1 <= 15)
+                    {
+                        if(!visited[current.x+1][current.y])
+                        {
+                            visited[current.x+1][current.y] = true;
+                            cells[current.x+1][current.y].setDist(std::min(current.dist+1, cells[current.x+1][current.y].dist));
+                            q.push(cells[current.x+1][current.y]);
+                        }
+                    }
+                }
+
+                if((current.wallCode & 8) == 0)
+                {
+                    if(current.y-1 >= 0)
+                    {
+                        if(!visited[current.x][current.y-1])
+                        {
+                            visited[current.x][current.y-1] = true;
+                            cells[current.x][current.y-1].setDist(std::min(current.dist+1, cells[current.x][current.y-1].dist));
+                            q.push(cells[current.x][current.y-1]);
+                        }
+                    }
+                }
 
 
+            }
+
+        }
+        
+        void printMazeWallCode()
+        {
+            for(int i = 0; i < 16; i++)
+            {
+                for(int j = 0; j < 16; j++)
+                {
+                    std::cout << cells[i][j].wallCode << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
 };
 
 class Bot
@@ -251,8 +347,6 @@ class Bot
 
 // ------------------Global Variables----------------------
 
-Bot bot(0, 0, 0);
-
 
 
 
@@ -264,14 +358,31 @@ Bot bot(0, 0, 0);
 int main()
 {
     Maze maze;
-    maze.printMazeWalls();
-    std::cout << std::endl;
-    maze.updateWall(8,8,15);
-    maze.printMazeWalls();
-    std::cout << std::endl;
+    maze.updateWall(0,0,2);
+    maze.updateWall(1,0,2);
+    maze.updateWall(2,0,2);
+    maze.updateWall(3,0,2);
+    maze.updateWall(4,0,4);
+    maze.updateWall(4,1,5);
+    maze.updateWall(4,2,5);
+    maze.updateWall(4,3,5);
+    maze.updateWall(4,4,5);
+    maze.updateWall(4,5,6);
+    maze.updateWall(3,5,10);
+    maze.updateWall(2,5,10);
+    maze.updateWall(1,5,9);
+    maze.updateWall(1,6,5);
+    maze.updateWall(1,7,5);
+    maze.updateWall(1,8,3);
+    maze.updateWall(2,8,10);
+    maze.floodFill();
+    // maze.printMaze();
     maze.printMaze();
+    std::cout << std::endl;
+    maze.printMazeWallCode();
     return 0;
 }
 
 
 // ------------------End of Program------------------------
+
